@@ -15,7 +15,11 @@ public class SecurityConfig {
             .csrf().disable()
             .headers().frameOptions().disable()
             .and()
-            .authorizeRequests((requests) -> requests.anyRequest().permitAll());
+                .authorizeRequests(requests -> requests
+                        .antMatchers("/h2-console/**").permitAll()
+                        .antMatchers("/conta/**").permitAll()
+                        .antMatchers("/test/**").permitAll()
+                        .anyRequest().permitAll());
         return http.build();
     }
 }
