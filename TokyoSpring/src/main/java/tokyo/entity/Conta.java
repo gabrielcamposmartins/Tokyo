@@ -18,6 +18,10 @@ public class Conta {
     public Conta() {
     }
 
+    public Conta(Long id) {
+        this.id = id;
+    }
+
     public Conta(ContaDto dto) {
         this.saldo = dto.getSaldo();
     }
