@@ -1,5 +1,7 @@
 # tokyo-vue
 
+node v19.6.1
+
 ## Project setup
 ```
 npm install
