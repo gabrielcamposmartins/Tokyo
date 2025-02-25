@@ -14,6 +14,8 @@ npm run serve
 
 ----------------------------
 
+start back dps front para rodar nas portas padrões 8080 e 8081
+
 Para simular nova transferencia
 Selecionar conta -> Nova transferência -> enviar
 
