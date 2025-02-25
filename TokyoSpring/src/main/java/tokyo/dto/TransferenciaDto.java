@@ -4,6 +4,7 @@ import tokyo.entity.Conta;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class TransferenciaDto {
@@ -16,7 +17,7 @@ public class TransferenciaDto {
 
     private String dataTransferencia;
 
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private final DateTimeFormatter formatter = DateTimeFormatter.ISO_ZONED_DATE_TIME;//DateTimeFormatter.ofPattern("yyyy-MM-dd"); //"dd/MM/yyyy"
 
     public TransferenciaDto() {
     }
@@ -46,10 +47,12 @@ public class TransferenciaDto {
     }
 
     public LocalDate getDataTransferencia() {
-        return LocalDate.parse(dataTransferencia, formatter);
+        ZonedDateTime zonedDateTime = ZonedDateTime.parse(dataTransferencia, formatter);
+        return zonedDateTime.toLocalDate();
     }
 
     public void setDataTransferencia(String dataTransferencia) {
         this.dataTransferencia = dataTransferencia;
     }
+
 }

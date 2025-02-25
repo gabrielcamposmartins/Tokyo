@@ -1,6 +1,8 @@
 package tokyo.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tokyo.dto.TransferenciaDto;
@@ -12,6 +14,7 @@ import tokyo.repositories.TransferenciaRepository;
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 public class TransferenciaService {
@@ -25,9 +28,24 @@ public class TransferenciaService {
         this.contaRepository = contaRepository;
     }
 
+    @Transactional
     public Transferencia createTransferencia(TransferenciaDto transferenciaDto) {
+        Conta origem = contaRepository.findById(transferenciaDto.getOrigem())
+                .orElseThrow(() -> new RuntimeException("Conta origem not found"));
+        Conta destino = contaRepository.findById(transferenciaDto.getDestino())
+                .orElseThrow(() -> new RuntimeException("Conta destino not found"));
         Transferencia transferencia = new Transferencia(transferenciaDto);
+        transferencia.setOrigem(origem);
+        transferencia.setDestino(destino);
         return transferenciaRepository.save(calcularTaxa(transferencia));
+    }
+
+    public Page<Transferencia> getTransferencias(Pageable pageable) {
+        return transferenciaRepository.findAll(pageable);
+    }
+
+    public Page<Transferencia> getTransferenciasByOrigem(Long origemId, Pageable pageable) {
+        return transferenciaRepository.findAllByOrigemId(origemId, pageable);
     }
 
     public Transferencia calcularTaxa(Transferencia transferencia) {
@@ -55,18 +73,19 @@ public class TransferenciaService {
 
     @Transactional
     public void processarTransferencia(Transferencia transferencia) {
-        Conta origem = contaRepository.findById(transferencia.getOrigem().getId()).orElseThrow();
-        Conta destino = contaRepository.findById(transferencia.getDestino().getId()).orElseThrow();
-
-        if (origem.getSaldo().compareTo(transferencia.getValor().add(transferencia.getTaxa())) < 0) {
-            throw new RuntimeException("Saldo insuficiente");
+        try {
+            Conta origem = contaRepository.findById(transferencia.getOrigem().getId()).orElseThrow();
+            Conta destino = contaRepository.findById(transferencia.getDestino().getId()).orElseThrow();
+            if (origem.getSaldo().compareTo(transferencia.getValor().add(transferencia.getTaxa())) < 0) {
+                throw new RuntimeException("Saldo insuficiente");
+            }
+            origem.setSaldo(origem.getSaldo().subtract(transferencia.getValor().add(transferencia.getTaxa())));
+            destino.setSaldo(destino.getSaldo().add(transferencia.getValor().add(transferencia.getTaxa())));
+            contaRepository.save(origem);
+            contaRepository.save(destino);
+            transferenciaRepository.save(transferencia.setEfetuada(true));
+        } catch (RuntimeException e) {
+            System.err.println("Failed to process transferencia: " + transferencia.getId() + " due to: " + e.getMessage());
         }
-
-        origem.setSaldo(origem.getSaldo().subtract(transferencia.getValor().add(transferencia.getTaxa())));
-        destino.setSaldo(destino.getSaldo().add(transferencia.getValor().add(transferencia.getTaxa())));
-
-        contaRepository.save(origem);
-        contaRepository.save(destino);
-        transferenciaRepository.save(transferencia.setEfetuada(true));
     }
 }

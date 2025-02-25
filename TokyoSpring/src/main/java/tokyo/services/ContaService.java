@@ -6,6 +6,8 @@ import tokyo.dto.ContaDto;
 import tokyo.entity.Conta;
 import tokyo.repositories.ContaRepository;
 
+import java.util.List;
+
 @Service
 public class ContaService {
     private final ContaRepository contaRepository;
@@ -17,5 +19,9 @@ public class ContaService {
 
     public Conta createConta(ContaDto contaDto) {
         return contaRepository.save(new Conta(contaDto));
+    }
+
+    public List<Conta> getContas() {
+        return contaRepository.findAll();
     }
 }

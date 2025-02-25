@@ -1,44 +1,96 @@
 <template>
-  <div>
-    <ContasSelect :contas="contas"/>
-    <h1>{{ homeMessage }}</h1>
-    <button @click="test()" ></button>
+  <div class="m-5 d-flex flex-column align-items-center">
+    <div class="d-flex align-items-center justify-content-between w-100">
+      <ContasSelect :contas="contas" @contaSelecionada="preencherTabela" />
+      <h1 v-if="contaSelecionada">{{ "Saldo:" + contaSelecionada.saldo }}</h1>
+    </div>
+    <h1 v-if="!contaSelecionada">{{ homeMessage }}</h1>
+    <Transferencias
+      v-if="contaSelecionada"
+      :transferencias="transferencias"
+      :contas="contas"
+      :totalElements="totalElements"
+      :current-page="page"
+      @page-changed="handlePageChange"
+      @cadastro-transferencia="cadastrarTransferencia"
+    />
   </div>
 </template>
 <script>
-import ContasSelect from './ContasSelect.vue'
+import ContasSelect from "./ContasSelect.vue";
+import Transferencias from "./Transferencias.vue";
+import { getContas } from "../services/contas";
+import {
+  getTransferencias,
+  createTransferencia,
+} from "../services/transferencias";
 
 export default {
-  name: 'Home',
+  name: "Home",
   components: {
     ContasSelect,
+    Transferencias,
   },
   data() {
     return {
-      homeMessage: 'Selecione uma conta para começar',
-      contas: ['001', '002'],
-    }
+      homeMessage: "Selecione uma conta para começar",
+      contas: [],
+      transferencias: [],
+      contaSelecionada: null,
+      totalElements: null,
+      page: 0,
+      size: 5,
+    };
   },
   methods: {
-    test() {
-      alert('Hello, World!');
-    }
-  }
-}
+    preencherTabela(contaSelecionada) {
+      this.contaSelecionada = contaSelecionada;
+      this.buscarTransferencias(contaSelecionada.id);
+    },
+    cadastrarTransferencia(transferencia) {
+      createTransferencia(transferencia)
+        .then(() => {
+          this.buscarTransferencias(this.contaSelecionada.id);
+        })
+        .catch((error) => {
+          alert(error);
+        });
+    },
+    buscarTransferencias(id) {
+      const params = {
+        id: id,
+        page: this.page - 1,
+        size: this.size,
+      };
+      getTransferencias(params)
+        .then((response) => {
+          if (Array.isArray(response.content)) {
+            this.totalElements = response.totalElements;
+            this.transferencias = response.content;
+          } else {
+            console.error("Expected an array but got:", response);
+          }
+        })
+        .catch((error) => {
+          alert(error);
+        });
+    },
+    handlePageChange(newPage) {
+      this.page = newPage;
+      this.buscarTransferencias();
+    },
+    buscarContas() {
+      getContas()
+        .then((response) => {
+          this.contas = response;
+        })
+        .catch((error) => {
+          alert(error);
+        });
+    },
+  },
+  mounted() {
+    this.buscarContas();
+  },
+};
 </script>
-<style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
-</style>
